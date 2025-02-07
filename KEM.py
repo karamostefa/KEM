@@ -1,5 +1,8 @@
 from time import perf_counter
 import random
+import hashlib
+
+
 
 def egcd(a, b):
     if a == 0:
@@ -52,10 +55,17 @@ a = random.randrange(A, A2, 1)
 b = random.randrange(B, B2, 1)
 c2 = (c1*a + b) % p            # send c2 to alice
 
+
+# -------------------- Round 2 --------------------------------
+
+
 # Alice
 e = random.randrange(E, E2, 1)
 c3 = (c2*r1 + e) %p
-ca = pow(r, e*k, p)          # send c3 and ca to bob
+ca = e*k %p
+h = hashlib.sha256(str.encode(str(ca))).hexdigest()
+ca = int(h,16) %p  # send c3 and ca to bob
+                   # to prove legitimacy, in pratice, Alice signs "ca" and sends the signature instead
 
 # Bob
 ee = (c3 %b) %a
@@ -63,14 +73,21 @@ kk = (((c3 - ee) %b) * modinv(a, p)) %p
 
 rr1 = (c3//b)
 rr = modinv(rr1, p)
-cb = pow(rr, ee*kk, p)
-if ca == cb:                 # seccess, the secret key is k
-    ccb = pow(kk, ee*rr, p)  # send ccb to alice, to prove he has the valid k
-else: print('err bob') 
+cb = ee*kk %p
+h = hashlib.sha256(str.encode(str(cb))).hexdigest()
+cb = int(h,16) %p
 
+if ca == cb:                 # seccess, the secret key is k
+    ccb = ee*rr %p 
+    h = hashlib.sha256(str.encode(str(ccb))).hexdigest()
+    ccb = int(h,16) %p     # send ccb to alice, to prove he has the valid numbers
+    # to prove legitimacy, in pratice, Bob signs "ccb" and sends the signature instead
+else: print('err bob')
 
 # Alice
-cca = pow(k, e*r, p)
+cca = e*r %p
+h = hashlib.sha256(str.encode(str(cca))).hexdigest()
+cca = int(h,16) %p
 if ccb == cca: print('seccess ') # seccess, the secret key is k, bob has the same k
 else: print('err alice')
 
